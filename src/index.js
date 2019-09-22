@@ -5,7 +5,8 @@
  * - default webp support for whom supports it
  * - no width/height -> respond with original dimentions
  * - resize one dimention and preserve aspect ratio
- * - jpeg options
+ * - expiry header
+ * - content type header
  */
 
 const path = require('path');
@@ -16,6 +17,7 @@ const express = require('express');
 const sharp = require('sharp');
 
 const api = require('./api');
+const {getFormatOptions} = require('./utils');
 
 const fsExistsAsync =util.promisify(fs.exists);
 const app = express();
@@ -41,19 +43,19 @@ app.get('/:name', async ({query, params, hasWebpSupport}, res) => {
 
     const resizeOptions = {
         width: query.width || query.w,
-        height: query.height || query.h || query.width || query.w,
+        height: query.height || query.h,
         interplace: query.interplace || 'Plain',
     };
 
     const img = path.parse(params.name);
 
-    const seekingImgName = `${img.name}-${resizeOptions.width}x${resizeOptions.height}${img.ext}`;
-    const seekingImgPath = path.join(__dirname, '../public', seekingImgName);
+    const wantedImgName = `${img.name}-${resizeOptions.width}x${resizeOptions.height}${img.ext}`;
+    const wantedImgPath = path.join(__dirname, '../public', wantedImgName);
 
-    const seekingImgExists = await fsExistsAsync(seekingImgPath);
+    const wantedImgExists = await fsExistsAsync(wantedImgPath);
 
-    if (seekingImgExists) {
-        return res.sendFile(seekingImgPath);
+    if (wantedImgExists) {
+        return res.sendFile(wantedImgPath);
     }
 
     const originalImgPath = path.resolve('uploads', img.name);
@@ -72,32 +74,24 @@ app.get('/:name', async ({query, params, hasWebpSupport}, res) => {
         });
     }
 
-    // TODO see toFormat
-    // https://sharp.pixelplumbing.com/en/stable/api-output/#toformat
-    if (img.ext === '') {
-        if (hasWebpSupport) {
-            transformer.webp();
-        } else {
-            transformer.jpeg();
-        }
-    } else {
-        if (img.ext === '.png') {
-            transformer.png();
-        }
-        if (img.ext === '.jpg' || img.ext === '.jpeg') {
-            transformer.jpeg();
-        }
-        if (img.ext === '.webp') {
-            transformer.webp();
-        }
-    }
+    const fomratMap = {
+        '.webp': 'webp',
+        '.png': 'png',
+        '.jpg': 'jpeg',
+        '.jpeg': 'jpeg',
+    };
+    const formatName = img.ext in fomratMap
+        ? fomratMap[img.ext]
+        : (hasWebpSupport ? 'webp' : 'jpeg');
+    const formatOptions = getFormatOptions(query, formatName);
+    console.log({formatName, formatOptions});
+    transformer[formatName](formatOptions);
 
     // respond to client
     const imgReadableStream = fs
         .createReadStream(originalImgPath)
         .pipe(transformer)
-        // .pipe(res);
-    const fileDest = fs.createWriteStream(seekingImgPath);
+    const fileDest = fs.createWriteStream(wantedImgPath);
 
     // send to client
     imgReadableStream.pipe(res);
