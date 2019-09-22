@@ -22,7 +22,7 @@
   },
   "nodemonConfig": {
     "events": {
-      "start": "clear"
+      "restart": "clear"
     }
   }
 }
