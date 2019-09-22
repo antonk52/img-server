@@ -1,5 +1,6 @@
 'use strict'
 
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const multer = require('multer');
@@ -35,5 +36,13 @@ api.get('/empty', (_, res) => {
             : res.send('ok'),
     );
 });
+
+api.get('/all', (_, res) => {
+    fs.readdir(path.join(__dirname, '../../uploads'), (error, data) => {
+        if (error) return res.send({status: 'fail', error});
+
+        res.send({status: 'success', data});
+    })
+})
 
 module.exports = api;
