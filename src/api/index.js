@@ -3,6 +3,7 @@
 const path = require('path');
 const express = require('express');
 const multer = require('multer');
+const rimraf = require('rimraf');
 
 const api = express.Router();
 const upload = multer({
@@ -22,6 +23,17 @@ api.post('/add-img', upload.single('foobar'), (req, res) => {
         filename,
         size,
     });
+});
+
+api.get('/empty', (_, res) => {
+    // all but html
+    const pathToFiles = path.resolve(__dirname, '../../public/*.!(html)');
+    rimraf(
+        pathToFiles,
+        (e) => e
+            ? console.err(e)
+            : res.send('ok'),
+    );
 });
 
 module.exports = api;
