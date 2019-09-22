@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload your image</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 100vh;
+    }
+    form {
+      display: flex;
+      box-shadow: 0 0 10px 10px #eee;
+      padding: 20px;
+      flex-flow: column nowrap;
+    }
+    form * + * {
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <form action="/api/add-img" method="post" enctype="multipart/form-data">
+    <input name="foobar" type="file">
+    <button type="submit">submit</button>
+  </form>
+</body>
+</html>
