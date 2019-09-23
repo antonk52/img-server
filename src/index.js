@@ -19,8 +19,9 @@ const sharp = require('sharp');
 const api = require('./api');
 const {getFormatOptions} = require('./utils');
 
-const fsExistsAsync =util.promisify(fs.exists);
+const fsExistsAsync = util.promisify(fs.exists);
 const app = express();
+const YEAR_MS = 356 * 24 * 60 * 60 * 1000;
 
 // DEV mode
 // serves static from public dir & home page has a form to upload new images
@@ -40,7 +41,6 @@ app.use((req, _, next) => {
 })
 
 app.get('/:name', async ({query, params, hasWebpSupport}, res) => {
-
     const resizeOptions = {
         width: query.width || query.w,
         height: query.height || query.h,
@@ -84,7 +84,6 @@ app.get('/:name', async ({query, params, hasWebpSupport}, res) => {
         ? fomratMap[img.ext]
         : (hasWebpSupport ? 'webp' : 'jpeg');
     const formatOptions = getFormatOptions(query, formatName);
-    console.log({formatName, formatOptions});
     transformer[formatName](formatOptions);
 
     // respond to client
@@ -93,6 +92,13 @@ app.get('/:name', async ({query, params, hasWebpSupport}, res) => {
         .pipe(transformer)
     const fileDest = fs.createWriteStream(wantedImgPath);
 
+    const now = new Date();
+    res.set({
+        'Content-Type': `image/${formatName}`,
+        'Date': now.toUTCString(),
+        'Cache-Control': 'public, max-age=31536000',
+        'Expires': new Date(now.getTime() + YEAR_MS).toUTCString(),
+    });
     // send to client
     imgReadableStream.pipe(res);
     // save to disk
